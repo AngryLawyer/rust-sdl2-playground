@@ -24,10 +24,10 @@ if [ ! -d "libs" ]; then
 fi
 # Scrape them
 rm libs/*
-mv ../rust-sdl2/*.dummy libs
-mv ../rust-sdl2/*.so libs
-mv ../rust-sdl2/*.dylib libs
-mv ../rust-sdl2/*.dll libs
+cp ../rust-sdl2/*.dummy libs
+cp ../rust-sdl2/*.so libs
+cp ../rust-sdl2/*.dylib libs
+cp ../rust-sdl2/*.dll libs
 
 # Check what project we want to build, or all of them
 # Hack it for now

@@ -1,5 +1,11 @@
 extern mod sdl2;
-use std::io;
+use std::rand;
+use std::rand::RngUtil;
+use sdl2::render;
+use sdl2::event;
+use sdl2::pixels;
+use sdl2::rect;
+use sdl2::keycode;
 
 #[start]
 fn start(argc: int, argv: **u8, crate_map: *u8) -> int {
@@ -8,31 +14,96 @@ fn start(argc: int, argv: **u8, crate_map: *u8) -> int {
 
 fn main() {
 	#[main];
-
+    let mut stars = generate_star_layer();
     sdl2::init([sdl2::InitVideo]);
-    match sdl2::render::Renderer::new_with_window(800, 600, []) {
+    match render::Renderer::new_with_window(800, 600, []) {
         Ok(renderer) => {
-            renderer.set_draw_color(sdl2::pixels::RGB(255, 0, 0));
-            renderer.clear();
-            renderer.present();
 
             'main : loop {
-                'event : loop {
-                    match sdl2::event::wait_event() {
-                        sdl2::event::QuitEvent(_) => break 'main,
-                        sdl2::event::KeyDownEvent(_, _, key, _, _) => {
-                            io::println("LOL");
-                            if key == sdl2::keycode::EscapeKey {
-                                break 'main
-                            }
+                match event::poll_event() {
+                    event::QuitEvent(_) => break 'main,
+                    event::KeyDownEvent(_, _, key, _, _) => {
+                        if key == keycode::EscapeKey {
+                            break 'main
                         }
-                        _ => {
-                        }
-                    };
-                }
+                    }
+                    _ => {
+                    }
+                };
+                do_think(stars);
+                renderer.set_draw_color(pixels::RGB(0, 0, 0));
+                renderer.clear();
+                render_stars(renderer, stars);
+                renderer.present();
+                sdl2::timer::delay(50);
             }
         },
         Err(msg) => fail!(msg)
     };
     sdl2::quit();
+}
+
+fn render_stars(renderer: &render::Renderer, stars: &[Star]) {
+    for star in stars.iter() {
+        let base_hue = (255 / 5) * star.layer;
+        let color = if star.frame > 4 {
+            base_hue - (star.frame * 50)
+        } else {
+            base_hue - ((8 - star.frame) * 50)
+        };
+        renderer.set_draw_color(pixels::RGB(color, color, color));
+        renderer.draw_point(star.pos);
+    }
+}
+
+fn do_think(stars: &mut [Star]) {
+    for star in stars.mut_iter() {
+        star.think()
+    }
+}
+
+fn generate_star_layer() -> ~[Star] {
+    let mut rng = rand::rng();
+    let mut stars: ~[Star] = ~[];
+
+    for _i in range(0, 100) {
+        let x: int = rng.gen_uint_range(0, 800) as int;
+        let y: int = rng.gen_uint_range(0, 600) as int;
+        let frame: u8 = rng.gen_uint_range(0, 7) as u8;
+        let layer: u8 = rng.gen_uint_range(1, 5) as u8;
+        stars.push(Star::new(x, y, frame, layer));
+    }
+    stars
+}
+
+struct Star {
+    pos: rect::Point,
+    frame: u8,
+    layer: u8
+}
+
+impl Star {
+
+    fn new(x: int, y: int, initial_frame: u8, layer: u8) -> Star {
+        Star {
+            pos: rect::Point {
+                x: x as i32,
+                y: y as i32
+            },
+            frame: initial_frame,
+            layer: layer
+        }
+    }
+
+    fn think(&mut self) {
+        if self.frame == 7 {
+            self.frame = 0
+        } else {
+            self.frame += 1
+        };
+        self.pos.y += self.layer as i32;
+        if self.pos.y > 600 {
+            self.pos.y -= 600
+        }
+    }
 }
