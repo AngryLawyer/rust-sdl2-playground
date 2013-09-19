@@ -18,24 +18,30 @@ fn main() {
     sdl2::init([sdl2::InitVideo]);
     match render::Renderer::new_with_window(800, 600, []) {
         Ok(renderer) => {
+            let mut limiter = RateLimiter::new(60);
 
             'main : loop {
-                match event::poll_event() {
-                    event::QuitEvent(_) => break 'main,
-                    event::KeyDownEvent(_, _, key, _, _) => {
-                        if key == keycode::EscapeKey {
-                            break 'main
+                'event: loop {
+                    match event::poll_event() {
+                        event::QuitEvent(_) => break 'main,
+                        event::KeyDownEvent(_, _, key, _, _) => {
+                            if key == keycode::EscapeKey {
+                                break 'main
+                            }
+                        },
+                        event::NoEvent  => {
+                            break 'event
+                        },
+                        _ => {
                         }
-                    }
-                    _ => {
-                    }
+                    };
                 };
                 do_think(stars);
                 renderer.set_draw_color(pixels::RGB(0, 0, 0));
                 renderer.clear();
                 render_stars(renderer, stars);
                 renderer.present();
-                sdl2::timer::delay(50);
+                limiter.limit();
             }
         },
         Err(msg) => fail!(msg)
@@ -105,5 +111,29 @@ impl Star {
         if self.pos.y > 600 {
             self.pos.y -= 600
         }
+    }
+}
+
+struct RateLimiter {
+    fps: uint,
+    last_ticks: uint
+}
+
+impl RateLimiter {
+
+    fn new(fps: uint) -> RateLimiter {
+        RateLimiter {
+            fps: fps,
+            last_ticks: 0
+        }
+    }
+
+    fn limit(&mut self) {
+        let ticks = sdl2::timer::get_ticks();
+        let adjusted_ticks = ticks - self.last_ticks;
+        if adjusted_ticks < 1000 / self.fps {
+            sdl2::timer::delay((1000 / self.fps) - adjusted_ticks);
+        }
+        self.last_ticks = ticks;
     }
 }
