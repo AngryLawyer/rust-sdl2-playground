@@ -51,7 +51,7 @@ fn main() {
 
 fn render_stars(renderer: &render::Renderer, stars: &[Star]) {
     for star in stars.iter() {
-        let base_hue = (255 / 5) * star.layer;
+        let base_hue = (255 / 5) / star.layer;
         let color = if star.frame > 4 {
             base_hue - (star.frame * 50)
         } else {
