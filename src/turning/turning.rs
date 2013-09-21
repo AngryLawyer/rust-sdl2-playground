@@ -1,9 +1,11 @@
 extern mod sdl2;
+extern mod extra;
 
 use std::rand;
 use std::rand::RngUtil;
 use std::io;
 use std::path;
+use extra::treemap;
 use sdl2::render;
 use sdl2::event;
 use sdl2::pixels;
@@ -31,7 +33,7 @@ fn main() {
                     fail!(msg)
                 }
             };
-
+            let mut keyhandler = KeyHandler::new();
             let mut ship = Ship::new(asset, 400, 300, 0);
 
             'main : loop {
@@ -43,15 +45,13 @@ fn main() {
                                 keycode::EscapeKey => {
                                     break 'main
                                 },
-                                keycode::LeftKey => {
-                                    ship.left()
-                                },
-                                keycode::RightKey => {
-                                    ship.right()
-                                }
                                 _ => {
+                                    keyhandler.handle_key_down(key)
                                 }
                             }
+                        },
+                        event::KeyUpEvent(_, _, key, _, _) => {
+                            keyhandler.handle_key_up(key)
                         },
                         event::NoEvent  => {
                             break 'event
@@ -60,6 +60,12 @@ fn main() {
                         }
                     };
                 };
+                if keyhandler.is_pressed(keycode::LeftKey) {
+                    ship.left();
+                }
+                if keyhandler.is_pressed(keycode::RightKey) {
+                    ship.right();
+                }
                 renderer.clear();
                 ship.draw(renderer);
                 renderer.present();
@@ -134,5 +140,36 @@ impl GraphicAsset {
             None,
             render::FlipNone
         );
+    }
+}
+
+struct KeyHandler {
+    keys: ~treemap::TreeMap<uint, keycode::KeyCode>
+}
+
+impl KeyHandler {
+    fn new() -> ~KeyHandler {
+        ~KeyHandler {
+            keys: ~treemap::TreeMap::new()
+        }
+    }
+
+    fn handle_key_down(&mut self, code: keycode::KeyCode) {
+        self.keys.swap(code as uint, code);
+    }
+
+    fn handle_key_up(&mut self, code: keycode::KeyCode) {
+        self.keys.pop(~(code as uint));
+    }
+
+    fn is_pressed(&self, code: keycode::KeyCode) -> bool {
+        match self.keys.find(~(code as uint)) {
+            Some(_) => {
+                true
+            },
+            None => {
+                false
+            }
+        }
     }
 }
