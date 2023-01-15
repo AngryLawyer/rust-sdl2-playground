@@ -1,13 +1,13 @@
 use sdl2;
 
 struct RateLimiter {
-    fps: uint,
-    last_ticks: uint
+    fps: usize,
+    last_ticks: usize
 }
 
 impl RateLimiter {
 
-    pub fn new(fps: uint) -> RateLimiter {
+    pub fn new(fps: usize) -> RateLimiter {
         RateLimiter {
             fps: fps,
             last_ticks: 0
